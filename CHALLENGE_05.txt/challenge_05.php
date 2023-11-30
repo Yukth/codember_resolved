@@ -82,14 +82,8 @@ function pre_process_raw_data($raw_data){
     return $pre_process_raw_data;
 }
 
-// - id: existe y es alfanumérica
-// - username: existe y es alfanumérico
-// - email: existe y es válido (sigue el patrón user@dominio.com)
-// - age: es opcional pero si aparece es un número
-// - location: es opcional pero si aparece es una cadena de texto
-
 function check_exist_and_alphanumeric_data($data){
-    return ( ($data != null) && (ctype_alnum($data) == true) ) ? true : false;
+    return ( ($data != null) && (ctype_alnum($data) == true) ) ? 1 : 0;
 }
 
 function check_optional($data,$type){
@@ -97,8 +91,8 @@ function check_optional($data,$type){
 
     if($data != null){
        $status = match($type){
-        'age' => is_numeric($data),
-        'location' => is_string($data),
+        'age' => is_numeric($data) ? 1 : 0,
+        'location' => is_string($data) ? 1 : 0,
        };
     }
 
@@ -108,18 +102,29 @@ function check_optional($data,$type){
 function apply_rules_to_check_integrity_of_data($raw_value){
     $check[] =  check_exist_and_alphanumeric_data($raw_value[0]);
     $check[] =  check_exist_and_alphanumeric_data($raw_value[1]);
-    $check[] =  filter_var($raw_value[2], FILTER_VALIDATE_EMAIL);
+    $check[] =  filter_var($raw_value[2], FILTER_VALIDATE_EMAIL) ? 1 : 0;
     $check[] =  check_optional($raw_value[3],'age');
     $check[] =  check_optional($raw_value[4],'location');
     
     return $check;
 }
 
-$temp_var = pre_process_raw_data($corrupted_csv);
-
-    $check = [];
-foreach ($temp_var as $temp_var_key => $temp_var_value) {
-
-    $tmp_check = apply_rules_to_check_integrity_of_data($temp_var_value);
-
+function get_invalid_data($check,$data){
+    return in_array('0',$check) != false ? substr($data[1],0,1) : '';
 }
+
+function process_corupted_data($data){
+    $hidde_messsage = '';
+    $temp_var = pre_process_raw_data($data);
+    
+    foreach ($temp_var as $temp_var_key => $temp_var_value) {
+    
+        $tmp_check = apply_rules_to_check_integrity_of_data($temp_var_value);
+        $hidde_messsage .= get_invalid_data($tmp_check,$temp_var_value);
+    
+    }
+
+    return $hidde_messsage;
+}
+
+echo process_corupted_data($corrupted_csv);
